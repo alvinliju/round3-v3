@@ -1,2 +1,29 @@
 @import "tailwindcss";
 
+body {
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 14px;
+    background-color: #f6f6ef;
+    margin: 0;
+    padding: 0;
+    color: #333;
+    line-height: 1.5;
+  }
+  
+  button {
+    cursor: pointer;
+  }
+  
+  a {
+    text-decoration: underline;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+  
+  @layer utilities {
+    .text-balance {
+      text-wrap: balance;
+    }
+  }
