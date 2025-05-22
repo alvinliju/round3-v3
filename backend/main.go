@@ -10,12 +10,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/resend/resend-go/v2"
+
+	//remove this thing on prod
+	"github.com/gin-contrib/cors"
 )
 
 type Writer struct {
-	ID    string
-	Name  string
-	Email string
+	ID      string
+	Name    string
+	Email   string
+	Website string
 }
 
 type InviteRequest struct {
@@ -31,6 +35,8 @@ var writers = []Writer{}
 
 var mailStore = make(map[string]string)
 
+var acceptedWriters = make(map[string]Writer)
+
 var apiKey = "re_dG2eKYEw_8tNTtVs5QM1ozDyyqYbd6T6x"
 
 func main() {
@@ -42,9 +48,12 @@ func main() {
 
 	var router *gin.Engine = gin.Default()
 
+	//CORS
+	router.Use(cors.Default())
+
 	router.GET("/", fuckit)
 	router.POST("/invite-writer", inviteWriter)
-	router.POST("/accept-invite/:id", acceptInvite)
+	router.POST("/accept-invite", acceptInvite)
 
 	router.Run(":8080")
 
@@ -82,9 +91,16 @@ func inviteWriter(context *gin.Context) {
 		}
 	}
 
+	for fmail, _ := range acceptedWriters {
+		if fmail == email {
+			context.JSON(http.StatusBadRequest, gin.H{"message": "Writer already exists, subscribe to them to read their updates."})
+			return
+		}
+	}
+
 	mailStore[email] = randomVerificationID
 
-	url := "round3.xyz/accept-request?id=" + randomVerificationID
+	url := "localhost:5173/accept-request?id=" + randomVerificationID
 
 	//send email
 	emailSent := sendEmail(email, url)
@@ -123,20 +139,34 @@ func sendEmail(email string, url string) bool {
 }
 
 func acceptInvite(context *gin.Context) {
-	id := context.Param("id")
 
-	var req InviteRequest
+	var req struct {
+		ID      string `json:"ID"`
+		Email   string `json:"Email"`
+		Name    string `json:"Name"`
+		Website string `json:"Website"`
+	}
 
 	if err := context.BindJSON(&req); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid JSON"})
 		return
 	}
 
+	id := req.ID
 	email := req.Email
+	name := req.Name
+	website := req.Website
 
 	for xmail, xuuid := range mailStore {
 		if xmail == email {
 			if xuuid == id {
+				acceptedWriters[email] = Writer{
+					ID:      id,
+					Name:    name,
+					Email:   xmail,
+					Website: website,
+				}
+				sendEmail(email, "kiti")
 				context.JSON(http.StatusOK, gin.H{"message": "Accepted"})
 				return
 			}
@@ -148,6 +178,8 @@ func acceptInvite(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Email"})
 		return
 	}
+
+	context.JSON(http.StatusInternalServerError, gin.H{"message": "Something went wrong"})
 
 }
 

@@ -5,6 +5,7 @@ import { BrowserRouter ,Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import WritersList from "./pages/Writers-List";
 import RequestWriter from "./pages/RequestWriter";
+import AcceptWriter from "./pages/AcceptWriter";
 
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/writers" element={<WritersList />} />
           <Route path="/request" element={<RequestWriter />} />
+          <Route path="/accept-request" element={<AcceptWriter />} />
         </Routes>
         </div>
       </div>

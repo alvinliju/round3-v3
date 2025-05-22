@@ -4,13 +4,26 @@ import Navbar from "../components/Navbar"
 
 function RequestWriter() {
     const [writerEmail, setWriterEmail] = useState("");
-    const handleSubmit = (e:FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e:FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if(!writerEmail){
             alert("Please enter an email")
             return
         }
-        alert(`Invitation sent to: ${writerEmail}`); // Show the alert
+
+        const res = await fetch('http://localhost:8080/invite-writer', 
+            {
+                method : 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                  },
+                body: JSON.stringify({"Email":writerEmail})
+            }
+        )
+
+        const data = await res.json()
+
+        alert(data.message); // Show the alert
         setWriterEmail(""); 
     }
   return (
