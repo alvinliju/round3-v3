@@ -62,9 +62,9 @@ func main() {
 
 	}
 
-	resend_apiKey = os.Getenv("RESEND_API_KEY")
-
 	var router *gin.Engine = gin.Default()
+
+	resend_apiKey = os.Getenv("RESEND_API_KEY")
 
 	//CORS
 	router.Use(cors.Default())
@@ -128,7 +128,7 @@ func inviteWriter(context *gin.Context) {
 	emailSent := sendEmail(email, url)
 
 	if !emailSent {
-		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not send any email"})
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not send email"})
 		return
 	}
 
@@ -141,7 +141,7 @@ func sendEmail(email string, url string) bool {
 	client := resend.NewClient(resend_apiKey)
 
 	params := &resend.SendEmailRequest{
-		From:    "Acme <onboarding@resend.dev>",
+		From:    "Round3 <onboarding@resend.dev>",
 		To:      []string{email},
 		Html:    url,
 		Subject: "Round3 Invite Request",
@@ -152,6 +152,7 @@ func sendEmail(email string, url string) bool {
 
 	sent, err := client.Emails.Send(params)
 	if err != nil {
+		fmt.Println(err)
 		return false
 	}
 
@@ -179,8 +180,10 @@ func acceptInvite(context *gin.Context) {
 	name := req.Name
 	website := req.Website
 
+	var found bool = false
 	for xmail, xuuid := range mailStore {
 		if xmail == email {
+			found = true
 			if xuuid == id {
 				acceptedWriters[email] = Writer{
 					ID:      id,
@@ -191,12 +194,16 @@ func acceptInvite(context *gin.Context) {
 				sendEmail(email, "kiti")
 				context.JSON(http.StatusOK, gin.H{"message": "Accepted"})
 				return
+			} else {
+				context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Id"})
+				return
 			}
 
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Id"})
-			return
 		}
 
+	}
+
+	if !found {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Email"})
 		return
 	}
