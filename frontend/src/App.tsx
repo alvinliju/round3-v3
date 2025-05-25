@@ -6,6 +6,7 @@ import HomePage from "./pages/HomePage";
 import WritersList from "./pages/Writers-List";
 import RequestWriter from "./pages/RequestWriter";
 import AcceptWriter from "./pages/AcceptWriter";
+import WriterLogin from "./pages/WriterLogin";
 
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
           <Route path="/writers" element={<WritersList />} />
           <Route path="/request" element={<RequestWriter />} />
           <Route path="/accept-request" element={<AcceptWriter />} />
+          <Route path="/login" element={<WriterLogin/>} />
         </Routes>
         </div>
       </div>
