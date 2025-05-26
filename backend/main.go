@@ -68,18 +68,6 @@ type AuthToken struct {
 // if db looks like name and gmail "Alvin" -> "alvin@gmail.com" we can do like this
 // doing this an array is possible to but too much work
 
-var writers = []Writer{}
-
-var mailStore = make(map[string]string)
-
-var acceptedWriters = make(map[string]Writer)
-
-var updates = []Update{}
-
-var subscribers = map[string][]string{}
-
-var authStore = make(map[string]AuthToken)
-
 var resend_apiKey string
 var MONGO_URI string
 var jwt_key []byte

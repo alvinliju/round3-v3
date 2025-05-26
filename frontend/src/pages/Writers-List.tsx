@@ -7,47 +7,97 @@ const PAGE_SIZE = 7;
 const fetcher = (url:string) => fetch(url).then((res) => res.json());
 
 interface Writer {
-    "name": string,
-    "avatar": string,
-    "subcount": string,
-    "id":string
+    "ID":string
+    "Name": string,
+    "Website": string,
 }
+
+interface WritersResponse {
+    writers: Writer[]
+  }
 
 
 function WritersList() {
     const [page, setPage] = useState(0);
     console.log(page)
-    const {data:writers, error, isLoading} = useSWR<Writer[]>("https://67e1b2a158cc6bf78526d2a4.mockapi.io/api/mock/v1/writers", fetcher)
+    const {data, error, isLoading} = useSWR<WritersResponse[]>("http://localhost:8080/writers", fetcher)
 
-    if (error) return "An error has occurred.";
-    if (isLoading) return "Loading...";
 
+
+    if (error) {
+        return (
+          <div className="flex flex-col min-h-screen bg-[#f6f6ef]">
+            <Navbar />
+            <div className="max-w-4xl mx-auto px-4 py-6">
+              <div className="p-4 text-red-600 bg-red-50 border border-red-200 text-sm">
+                Failed to load writers. Please try again later.
+              </div>
+            </div>
+          </div>
+        )
+      }
+    
+      if (isLoading) {
+        return (
+          <div className="flex flex-col min-h-screen bg-[#f6f6ef]">
+            <Navbar />
+            <div className="max-w-4xl mx-auto px-4 py-6">
+              <div className="text-sm text-gray-600">Loading writers...</div>
+            </div>
+          </div>
+        )
+      }
+    const writers = data?.writers || []
     const start = page * PAGE_SIZE;
     const end = start + PAGE_SIZE
-    const pageWriters = writers ? writers.slice(start, end) : [];
+    const pageWriters = data && writers ? writers.slice(start, end) : [];
+    const totalPages = Math.ceil(writers.length / PAGE_SIZE)
     
-    console.log(writers)
+    console.log("page wi",pageWriters)
   return (
     <div className="flex flex-col pb-8">
+
         <Navbar></Navbar>
-        <div>
-            <h1>Writers</h1>
+
+
+        <div className="mb-6">
+            <h1 className="text-xl font-bold text-black mb-2">Writers</h1>
+            <p className="text-sm text-gray-600">
+                {writers.length} writer{writers.length !== 1 ? "s" : ""} • Page {page + 1} of {totalPages || 1}
+            </p>
         </div>
-        {pageWriters && pageWriters.length > 0 && pageWriters.map(writer => (
-            <div key={writer.id} className="p-3 border border-gray-300 hover:border-gray-400 transition-colors">
-                <div className="relative h-12 w-12 rounded-full overflow-hidden bg-gray-100">
-                    <img className="max-w-12 rouned-lg" src={writer.avatar}></img>
-                    <h1>{writer.name}</h1>
-                </div>
+
+
+        <div className="space-y-1">
+        {pageWriters && pageWriters.length > 0 && pageWriters.map((writer, index) => (
+            <div key={writer.ID} className="flex items-center justify-between p-3 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
             
-                <div className="flex-1 py-2 gap-2">
-                    <h3 className="font-medium">{writer.name}</h3>
-                    <p className="text-sm text-gray-600">{writer.subcount} subscribers</p>
-                </div>
-                <button disabled className="bg-red-400 px-4 py-2 rounded-lg">Subscribe</button>
+                    <div>
+                        <h3 className="font-medium text-black text-sm">{writer.Name}</h3>
+                        <p className="text-xs text-gray-600">
+                        Working on:{" "}
+                        <a
+                            href={writer.Website.startsWith("http") ? writer.Website : `https://${writer.Website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-red-500 hover:underline"
+                        >
+                        {writer.Website}
+                      </a>
+                    </p>
+                  </div>
+                  <button
+                  onClick={() => console.log(`Subscribe to ${writer.Name}`)}
+                  className="bg-red-500 text-white px-3 py-1 text-xs font-medium hover:bg-[#ff7722] transition-colors"
+                >
+                  subscribe
+                </button>
             </div>
 
-        ))}
+        )) 
+        }
+        </div>
+        
         <div className="flex gap-2 mt-4 justify-center align-center">
                 <button
                     onClick={() => setPage(pag => Math.max(pag - 1, 0))}
