@@ -7,6 +7,8 @@ import WritersList from "./pages/Writers-List";
 import RequestWriter from "./pages/RequestWriter";
 import AcceptWriter from "./pages/AcceptWriter";
 import WriterLogin from "./pages/WriterLogin";
+import UpdateEditor from "./pages/UpdateEditor";
+import VerifyLogin from "./pages/VerifyLogin";
 
 
 function App() {
@@ -32,6 +34,8 @@ function App() {
           <Route path="/request" element={<RequestWriter />} />
           <Route path="/accept-request" element={<AcceptWriter />} />
           <Route path="/login" element={<WriterLogin/>} />
+          <Route path="/login/verify" element={<VerifyLogin/>} />
+          <Route path="/post" element={<UpdateEditor/>} />
         </Routes>
         </div>
       </div>

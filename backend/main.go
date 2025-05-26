@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,6 +9,11 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -20,23 +26,36 @@ import (
 )
 
 type Writer struct {
-	ID      string
-	Name    string
-	Email   string
-	Website string
+	ID      primitive.ObjectID `bson:"_id, omitempty"`
+	Name    string             `bson:"name"`
+	Email   string             `bson:"email"`
+	Website string             `bson:"website"`
 }
 
 type Update struct {
-	ID      string
-	Writer  Writer //writers email
-	Title   string
-	Body    string
-	Sent    bool
-	Created string
+	ID        primitive.ObjectID `bson:"_id, omitempty"`
+	Writer    primitive.ObjectID `bson:"writer_id"`
+	Title     string             `bson:"title"`
+	Body      string             `bson:"body"`
+	Sent      bool               `bson:"sent"`
+	CreatedAt time.Time          `bson:"created_at"`
+}
+
+type Invite struct {
+	ID             primitive.ObjectID `bson:"_id, omitempty"`
+	VerificationID string             `bson:"verification_id"`
+	Email          string             `bson:"email"`
+	CreatedAt      time.Time          `bson:"created_at"`
+}
+
+type Subscription struct {
+	ID             primitive.ObjectID `bson:"_id, omitempty"`
+	WriterID       primitive.ObjectID `bson:"writer_id"`
+	SubsciberEmail string             `bson:"subscriber_email"`
 }
 
 type InviteRequest struct {
-	Email string `json:"Email"`
+	Email string `bson:"Email"`
 }
 
 type AuthToken struct {
@@ -62,9 +81,46 @@ var subscribers = map[string][]string{}
 var authStore = make(map[string]AuthToken)
 
 var resend_apiKey string
+var MONGO_URI string
 var jwt_key []byte
 
+// db integration
+var mongoClient *mongo.Client
+var db *mongo.Database
+
+// Remove these from package level
+var (
+	writerCollection        *mongo.Collection
+	updateCollection        *mongo.Collection
+	inviteCollection        *mongo.Collection
+	authCollection          *mongo.Collection
+	subscriptionsCollection *mongo.Collection
+)
+
+func initMongo() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(MONGO_URI))
+	if err != nil {
+		log.Fatal(err)
+	}
+	mongoClient = client
+	db = client.Database("round3")
+
+	writerCollection = db.Collection("writers")
+	updateCollection = db.Collection("updates")
+	inviteCollection = db.Collection("invites")
+	authCollection = db.Collection("auth_tokens")
+	subscriptionsCollection = db.Collection("subscriptions")
+}
+
+// okay now great we have init mongo but what next?
+// mongo is document based so create diffrent documents to store shit in the db
+// basically i am thinking of what kind of people/function does the app servr and make collections accordingly in postgres terms its like tables
+// we want few docs -> writers, updates, invites, auth_tokens, subscriptions(list of subscribers emails linked w writers email)
+
 func main() {
+
 	//.env file init
 	err := godotenv.Load()
 	if err != nil {
@@ -72,13 +128,24 @@ func main() {
 
 	}
 
+	MONGO_URI = os.Getenv("MONGO_URI")
+
+	initMongo()
+
 	var router *gin.Engine = gin.Default()
 
 	resend_apiKey = os.Getenv("RESEND_API_KEY")
 	jwt_key = []byte(os.Getenv("JWT_KEY"))
 
 	//CORS
-	router.Use(cors.Default())
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	//auth
 	router.POST("/login/request", writerLoginRequest)
@@ -119,26 +186,40 @@ func inviteWriter(context *gin.Context) {
 		return
 	}
 
+	//check if writer is already invited
+
+	var existingInvite Invite
+	err := inviteCollection.FindOne(context, bson.M{"email": email}).Decode(&existingInvite)
+	if err == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Invite already exists"})
+		return
+	}
+
+	//check if writer already exists
+
+	var existingWriter Writer
+	err = writerCollection.FindOne(context, bson.M{"email": email}).Decode(&existingWriter)
+	if err == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Writer already exists"})
+		return
+	}
+
+	//create a new invite
 	randomVerificationID := uuid.New().String()
+	currTime := time.Now()
 
-	for xmail, _ := range mailStore {
-		if xmail == email {
-			fmt.Print(xmail)
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Request already sent wait for writer to accept the request."})
-			return
-		}
+	_, err = inviteCollection.InsertOne(context, bson.M{
+		"email":           email,
+		"verification_id": randomVerificationID,
+		"created_at":      currTime,
+	})
+
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Something went wrong try again"})
+		return
 	}
 
-	for fmail, _ := range acceptedWriters {
-		if fmail == email {
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Writer already exists, subscribe to them to read their updates."})
-			return
-		}
-	}
-
-	mailStore[email] = randomVerificationID
-
-	url := "localhost:5173/accept-request?id=" + randomVerificationID
+	url := "http://localhost:5173/accept-request?id=" + randomVerificationID
 
 	//send email
 	emailSent := sendEmail(email, url)
@@ -180,52 +261,68 @@ func sendEmail(email string, url string) bool {
 func acceptInvite(context *gin.Context) {
 
 	var req struct {
-		ID      string `json:"ID"`
-		Email   string `json:"Email"`
-		Name    string `json:"Name"`
-		Website string `json:"Website"`
+		VerificationID string `json:"ID"`
+		Email          string `json:"Email"`
+		Name           string `json:"Name"`
+		Website        string `json:"Website"`
 	}
 
 	if err := context.BindJSON(&req); err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid JSON"})
 		return
 	}
+	// var found bool = false
+	// for xmail, xuuid := range mailStore {
+	// 	if xmail == email {
+	// 		found = true
+	// 		if xuuid == id {
+	// 			acceptedWriters[email] = Writer{
+	// 				ID:      id,
+	// 				Name:    name,
+	// 				Email:   xmail,
+	// 				Website: website,
+	// 			}
+	// 			sendEmail(email, "kiti")
+	// 			context.JSON(http.StatusOK, gin.H{"message": "Accepted"})
+	// 			return
+	// 		} else {
+	// 			context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Id"})
+	// 			return
+	// 		}
 
-	id := req.ID
-	email := req.Email
-	name := req.Name
-	website := req.Website
+	// 	}
 
-	var found bool = false
-	for xmail, xuuid := range mailStore {
-		if xmail == email {
-			found = true
-			if xuuid == id {
-				acceptedWriters[email] = Writer{
-					ID:      id,
-					Name:    name,
-					Email:   xmail,
-					Website: website,
-				}
-				sendEmail(email, "kiti")
-				context.JSON(http.StatusOK, gin.H{"message": "Accepted"})
-				return
-			} else {
-				context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Id"})
-				return
-			}
+	// }
 
-		}
-
-	}
-
-	if !found {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Email"})
+	// if !found {
+	// 	context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Email"})
+	// 	return
+	// }
+	//
+	//validate acceptInvite
+	var invite Invite
+	err := inviteCollection.FindOne(context, bson.M{"email": req.Email, "verification_id": req.VerificationID}).Decode(&invite)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Invite"})
 		return
 	}
 
-	context.JSON(http.StatusInternalServerError, gin.H{"message": "Something went wrong"})
+	writer := Writer{
+		ID:      primitive.NewObjectID(),
+		Name:    req.Name,
+		Email:   req.Email,
+		Website: req.Website,
+	}
 
+	_, err = writerCollection.InsertOne(context, writer)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not create writer, try again later"})
+		return
+	}
+
+	inviteCollection.DeleteOne(context, bson.M{"_id": invite.ID})
+	sendEmail(req.Email, "Welcome to round3")
+	context.JSON(http.StatusCreated, gin.H{"message": "Writer created succesfully"})
 }
 
 // helper email validator
@@ -247,23 +344,35 @@ func postUpdate(context *gin.Context) {
 
 	email := context.GetString("email")
 
-	writer, ok := acceptedWriters[email]
-	if !ok {
-		context.JSON(http.StatusBadRequest, gin.H{"message": "Writer not found"})
+	//find writer
+	var writer Writer
+	err := writerCollection.FindOne(context, bson.M{"email": email}).Decode(&writer)
+	if err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Writer not found"})
 		return
 	}
 
+	// writer, ok := acceptedWriters[email]
+	// if !ok {
+	// 	context.JSON(http.StatusBadRequest, gin.H{"message": "Writer not found"})
+	// 	return
+	// }
+
 	currentTime := time.Now()
 	update := Update{
-		ID:      uuid.New().String(),
-		Writer:  writer,
-		Title:   req.Title,
-		Body:    req.Body,
-		Sent:    false,
-		Created: fmt.Sprintf("%v", currentTime),
+		ID:        primitive.NewObjectID(),
+		Writer:    writer.ID,
+		Title:     req.Title,
+		Body:      req.Body,
+		Sent:      false,
+		CreatedAt: currentTime,
 	}
 
-	updates = append(updates, update)
+	_, err = updateCollection.InsertOne(context, update)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not post the update"})
+		return
+	}
 
 	context.JSON(http.StatusCreated, gin.H{"message": "Update Posted",
 		"update": update,
@@ -271,9 +380,19 @@ func postUpdate(context *gin.Context) {
 }
 
 func discoverWriters(context *gin.Context) {
+
+	cursor, err := writerCollection.Find(context, bson.M{})
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch writers"})
+		return
+	}
+
+	defer cursor.Close(context)
+
 	var writersList []Writer
-	for _, w := range acceptedWriters {
-		writersList = append(writersList, w)
+	if err = cursor.All(context, &writersList); err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to decode writers"})
+		return
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Fetch Success", "writers": writersList})
@@ -290,19 +409,32 @@ func subscribeToWriter(context *gin.Context) {
 		return
 	}
 
-	if _, ok := acceptedWriters[req.WriterEmail]; !ok {
-		context.JSON(http.StatusNotFound, gin.H{"message": "Writer Not Found"})
+	//find writer
+	var writer Writer
+	err := writerCollection.FindOne(context, bson.M{"email": req.WriterEmail}).Decode(&writer)
+	if err != nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Writer not found"})
 		return
 	}
 
-	for _, sub := range subscribers[req.WriterEmail] {
-		if sub == req.SubscriberEmail {
-			context.JSON(http.StatusBadRequest, gin.H{"message": "Already subscribed wait for any updates from writer"})
-			return
-		}
+	//see if user is already subscribed
+	var exisingSubscriber Subscription
+	err = subscriptionsCollection.FindOne(context, bson.M{"writer_id": writer.ID, "subscriber_email": req.SubscriberEmail}).Decode(&exisingSubscriber)
+	if err == nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Already subscribed, kindly wait for any updated from the writer"})
+		return
 	}
 
-	subscribers[req.WriterEmail] = append(subscribers[req.WriterEmail], req.SubscriberEmail)
+	//add subscriber email to the doc
+	_, err = subscriptionsCollection.InsertOne(context, bson.M{
+		"writer_id":        writer.ID,
+		"subscriber_email": req.SubscriberEmail,
+	})
+
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create subscription"})
+		return
+	}
 
 	context.JSON(http.StatusCreated, gin.H{"message": "Subscription Added"})
 	return
@@ -322,7 +454,9 @@ func writerLoginRequest(context *gin.Context) {
 	//here is how the flow wroks
 	//writer submits the email
 	//check on our db if he exists
-	if _, ok := acceptedWriters[req.WriterEmail]; !ok {
+	var writer Writer
+	err := writerCollection.FindOne(context, bson.M{"email": req.WriterEmail}).Decode(&writer)
+	if err != nil {
 		context.JSON(http.StatusNotFound, gin.H{"message": "Writer not found"})
 		return
 	}
@@ -330,12 +464,17 @@ func writerLoginRequest(context *gin.Context) {
 	//if he does exist create an uuid "sfa234240-agaf"
 	token := uuid.New().String()
 
-	authStore[token] = AuthToken{
-		Email:     req.WriterEmail,
-		CreatedAt: time.Now(),
+	_, err = authCollection.InsertOne(context, bson.M{
+		"token":      token,
+		"email":      req.WriterEmail,
+		"created_at": time.Now(),
+	})
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create auth token"})
+		return
 	}
 	//send the uuid to the writer's email
-	url := "localhost:5173/login/verify?token=" + token
+	url := "http://localhost:5173/login/verify?token=" + token
 
 	isEmailSent := sendEmail(req.WriterEmail, url)
 
@@ -358,14 +497,20 @@ func writerLoginVerify(context *gin.Context) {
 		return
 	}
 
-	tokenData, exists := authStore[req.Token]
+	//see if the provided token exists in the sore
+	var authToken struct {
+		Email     string    `bson:"email"`
+		CreatedAt time.Time `bson:"created_at"`
+	}
 
-	if !exists {
+	err := authCollection.FindOne(context, bson.M{"token": req.Token}).Decode(&authToken)
+
+	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Token"})
 		return
 	}
 
-	if time.Since(tokenData.CreatedAt) > 15*time.Minute {
+	if time.Since(authToken.CreatedAt) > 15*time.Minute {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Token Expired"})
 		return
 	}
@@ -374,7 +519,7 @@ func writerLoginVerify(context *gin.Context) {
 	//i'll go with jwt less overhead and clean
 
 	claims := jwt.MapClaims{
-		"email": tokenData.Email,
+		"email": authToken.Email,
 		"exp":   time.Now().Add(24 * time.Hour).Unix(),
 	}
 
