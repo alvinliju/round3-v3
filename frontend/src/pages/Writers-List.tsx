@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import useSWR from "swr";
 import Navbar from "../components/Navbar";
 
@@ -18,6 +18,10 @@ interface WritersResponse {
 
 
 function WritersList() {
+    const [selectedWriter, setSelectedWriter] = useState<Writer | null>(null);
+    const [showModal, setShowModal] = useState(false)
+    const [email, setEmail] = useState("")
+
     const [page, setPage] = useState(0);
     console.log(page)
     const {data, error, isLoading} = useSWR<WritersResponse[]>("http://localhost:8080/writers", fetcher)
@@ -47,13 +51,39 @@ function WritersList() {
           </div>
         )
       }
+
     const writers = data?.writers || []
     const start = page * PAGE_SIZE;
     const end = start + PAGE_SIZE
     const pageWriters = data && writers ? writers.slice(start, end) : [];
     const totalPages = Math.ceil(writers.length / PAGE_SIZE)
+
     
-    console.log("page wi",pageWriters)
+    
+
+        const handleSubmit = async (e:FormEvent<HTMLFormElement>) => {
+            e.preventDefault()
+            const url = "http://localhost:8080/subscribe"
+            console.log(selectedWriter, email)
+    
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                  },
+    
+                body:JSON.stringify({"WriterEmail":selectedWriter, "SubscriberEmail":email})
+            })
+            const data = await res.json()
+            if (res.ok) {
+                alert("Subscribed successfully!");
+              } else {
+                alert(data.message);
+              }
+
+            setEmail("");
+            setShowModal(false)
+        }
   return (
     <div className="flex flex-col pb-8">
 
@@ -67,9 +97,41 @@ function WritersList() {
             </p>
         </div>
 
+        {showModal && selectedWriter && (
+  <div className="fixed inset-0 bg-black opacity-70 flex items-center justify-center z-50">
+    <form onSubmit={handleSubmit} className="bg-white rounded p-6 w-full max-w-sm">
+      <label>Email</label>
+      <input
+        type="email"
+        placeholder="aviato@gmail.com"
+        className="border p-2 w-full mb-3"
+        value={email}
+        onChange={e => setEmail(e.target.value)}
+        required
+      />
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          className="bg-red-500 text-white px-4 py-1"
+        >
+          Submit
+        </button>
+        <button
+          type="button"
+          onClick={() => { setShowModal(false); setSelectedWriter(null); }}
+          className="bg-gray-200 px-4 py-1"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+)}
+
+
 
         <div className="space-y-1">
-        {pageWriters && pageWriters.length > 0 && pageWriters.map((writer, index) => (
+        {pageWriters && pageWriters.length > 0 && pageWriters.map((writer :any, index:any) => (
             <div key={writer.ID} className="flex items-center justify-between p-3 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
             
                     <div>
@@ -87,7 +149,8 @@ function WritersList() {
                     </p>
                   </div>
                   <button
-                  onClick={() => console.log(`Subscribe to ${writer.Name}`)}
+                  
+                  onClick={() => {setShowModal(true); setSelectedWriter(writer.Email)}}
                   className="bg-red-500 text-white px-3 py-1 text-xs font-medium hover:bg-[#ff7722] transition-colors"
                 >
                   subscribe
