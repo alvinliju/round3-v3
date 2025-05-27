@@ -24,7 +24,7 @@ function WritersList() {
 
     const [page, setPage] = useState(0);
     console.log(page)
-    const {data, error, isLoading} = useSWR<WritersResponse[]>("http://localhost:8080/writers", fetcher)
+    const {data, error, isLoading} = useSWR<WritersResponse>("http://localhost:8080/writers", fetcher)
 
 
 
