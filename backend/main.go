@@ -116,11 +116,7 @@ func main() {
 
 	//.env file init if not in prd
 	if env != "production" {
-		err := godotenv.Load()
-		if err != nil {
-			log.Fatal("Error loading .env file")
-
-		}
+		godotenv.Load() // Just ignore the error in production
 	}
 
 	MONGO_URI = os.Getenv("MONGO_URI")
