@@ -109,11 +109,18 @@ func initMongo() {
 
 func main() {
 
-	//.env file init
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	env := os.Getenv("GO_ENV")
+	if env == "" {
+		env = "devlopment"
+	}
 
+	//.env file init if not in prd
+	if env != "production" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+
+		}
 	}
 
 	MONGO_URI = os.Getenv("MONGO_URI")
