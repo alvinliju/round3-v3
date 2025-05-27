@@ -13,7 +13,7 @@ import VerifyLogin from "./pages/VerifyLogin";
 function App() {
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.VITE_BASE_URL || '/'}>
       <div className="max-w-4xl px-4 mx-auto flex flex-col gap-8">
         <div className="max-w-full max-h-screen">
         <Routes>
