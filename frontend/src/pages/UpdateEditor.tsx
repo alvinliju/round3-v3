@@ -1,6 +1,8 @@
 import  { useState } from 'react'
 import Navbar from '../components/Navbar'
 import type { FormEvent } from 'react'
+
+const API_URL = "https://round3-v3.onrender.com/"
 function UpdateEditor() {
     const[subject, setSubject] = useState("")
     const [content, setContent] = useState("")
@@ -20,7 +22,7 @@ function UpdateEditor() {
             return
         }
 
-        const res = await fetch('http://localhost:8080/post-update', 
+        const res = await fetch(`${API_URL}/post-update`, 
             {
                 method : 'POST',
                 headers: {

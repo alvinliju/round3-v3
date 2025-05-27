@@ -2,6 +2,8 @@ import { useState, type FormEvent } from "react"
 import useSWR from "swr";
 import Navbar from "../components/Navbar";
 
+const API_URL = "https://round3-v3.onrender.com/"
+
 const PAGE_SIZE = 7;
 
 const fetcher = (url:string) => fetch(url).then((res) => res.json());
@@ -24,7 +26,7 @@ function WritersList() {
 
     const [page, setPage] = useState(0);
     console.log(page)
-    const {data, error, isLoading} = useSWR<WritersResponse>("http://localhost:8080/writers", fetcher)
+    const {data, error, isLoading} = useSWR<WritersResponse>(`${API_URL}/writers`, fetcher)
 
 
 

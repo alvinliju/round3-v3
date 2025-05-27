@@ -2,6 +2,8 @@ import { useState } from "react"
 import { type FormEvent }from "react";
 import Navbar from "../components/Navbar"
 
+const API_URL = "https://round3-v3.onrender.com/"
+
 function RequestWriter() {
     const [writerEmail, setWriterEmail] = useState("");
     const handleSubmit = async (e:FormEvent<HTMLFormElement>) => {
@@ -11,7 +13,7 @@ function RequestWriter() {
             return
         }
 
-        const res = await fetch('http://localhost:8080/invite-writer', 
+        const res = await fetch(`${API_URL}/invite-writer`, 
             {
                 method : 'POST',
                 headers: {

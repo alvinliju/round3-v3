@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import Navbar from "../components/Navbar";
 import { useSearchParams } from "react-router-dom";
 
+const API_URL = "https://round3-v3.onrender.com/"
 
 
 function AcceptWriter() {
@@ -19,7 +20,7 @@ function AcceptWriter() {
             return
         }
 
-        const res = await fetch('http://localhost:8080/accept-invite', 
+        const res = await fetch(`${API_URL}/accept-invite`, 
             {
                 method : 'POST',
                 headers: {
