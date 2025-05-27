@@ -111,7 +111,7 @@ func main() {
 
 	env := os.Getenv("GO_ENV")
 	if env == "" {
-		env = "devlopment"
+		env = "development"
 	}
 
 	//.env file init if not in prd

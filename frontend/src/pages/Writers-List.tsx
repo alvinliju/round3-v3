@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react"
+import { useState, type FormEvent } from "react"
 import useSWR from "swr";
 import Navbar from "../components/Navbar";
 
@@ -131,7 +131,7 @@ function WritersList() {
 
 
         <div className="space-y-1">
-        {pageWriters && pageWriters.length > 0 && pageWriters.map((writer :any, index:any) => (
+        {pageWriters && pageWriters.length > 0 && pageWriters.map((writer :any) => (
             <div key={writer.ID} className="flex items-center justify-between p-3 bg-white border-b border-gray-200 hover:bg-gray-50 transition-colors">
             
                     <div>

@@ -1,5 +1,4 @@
 import "./App.css";
-import Navbar from "./components/Navbar";
 import FrontPage from "./pages/FrontPage";
 import { BrowserRouter ,Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage";
@@ -12,16 +11,6 @@ import VerifyLogin from "./pages/VerifyLogin";
 
 
 function App() {
-  const updates = [
-    { founder: "alvin", company: "round3.xyz", content: "Hello world suckers" },
-    {
-      founder: "notalvin",
-      company: "round4.xyz",
-      content: "Hello world suckers",
-    },
-  ];
-
-  const token = "asfaf";
 
   return (
     <BrowserRouter>
