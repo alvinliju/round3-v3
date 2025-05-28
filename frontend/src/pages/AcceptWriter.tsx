@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import Navbar from "../components/Navbar";
 import { useSearchParams } from "react-router-dom";
 
-const API_URL = "https://round3-v3.onrender.com/"
+const API_URL = import.meta.env.VITE_API_URL 
 
 
 function AcceptWriter() {

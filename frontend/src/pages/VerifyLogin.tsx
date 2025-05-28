@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from '../components/Navbar';
 
+const API_URL = import.meta.env.VITE_API_URL 
 
 function VerifyLogin() {
     const [searchParams] = useSearchParams();
@@ -10,7 +11,7 @@ function VerifyLogin() {
     const naviagte = useNavigate()
 
     const verifyToken = async () => {
-        const res = await fetch('http://localhost:8080/login/verify', 
+        const res = await fetch(`${API_URL}/login/verify`, 
             {
                 method : 'POST',
                 headers: {

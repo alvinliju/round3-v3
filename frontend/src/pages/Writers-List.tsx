@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react"
 import useSWR from "swr";
 import Navbar from "../components/Navbar";
 
-const API_URL = "https://round3-v3.onrender.com/"
+const API_URL = import.meta.env.VITE_API_URL 
 
 const PAGE_SIZE = 7;
 

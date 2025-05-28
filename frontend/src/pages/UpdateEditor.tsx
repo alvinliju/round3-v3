@@ -2,7 +2,8 @@ import  { useState } from 'react'
 import Navbar from '../components/Navbar'
 import type { FormEvent } from 'react'
 
-const API_URL = "https://round3-v3.onrender.com/"
+const API_URL = import.meta.env.VITE_API_URL 
+
 function UpdateEditor() {
     const[subject, setSubject] = useState("")
     const [content, setContent] = useState("")

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import Navbar from '../components/Navbar';
 
-const API_URL = "https://round3-v3.onrender.com/"
+const API_URL = import.meta.env.VITE_API_URL 
 
 function WriterLogin() {
     const [email, setEmail] = useState("")
