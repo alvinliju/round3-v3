@@ -374,6 +374,7 @@ func discoverWriters(context *gin.Context) {
 
 	cursor, err := writerCollection.Find(context, bson.M{})
 	if err != nil {
+		log.Printf("Failed to fetch writers: %v", err)
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch writers"})
 		return
 	}
