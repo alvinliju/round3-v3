@@ -2,16 +2,6 @@
 import Navbar from '../components/Navbar';
 
 function HomePage() {
-    const updates = [
-        { founder: "alvin", company: "round3.xyz", content: "Hello world suckers" },
-        {
-          founder: "notalvin",
-          company: "round4.xyz",
-          content: "Hello world suckers",
-        },
-      ];
-
-      const token = "asfaf";
   return (
 
     <>

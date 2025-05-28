@@ -16,7 +16,7 @@ interface Writer {
 
 interface WritersResponse {
     writers: Writer[]
-  }
+}
 
 
 function WritersList() {
