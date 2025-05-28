@@ -130,7 +130,7 @@ func main() {
 
 	//CORS
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "https://www.round3.xyz", "https://round3.xyz"},
+		AllowOrigins:     []string{"http://localhost:5173", "https://www.round3.xyz"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
