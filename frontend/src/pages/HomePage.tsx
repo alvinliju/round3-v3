@@ -27,7 +27,7 @@ function HomePage() {
         
         <div className="flex flex-col">
           <p className="text-xl">Your updates</p>
-          {updates.length > 0 &&
+          {/* {updates.length > 0 &&
             updates.map((update) => (
               <div className="border-2 p-4">
                 <h2>Company:{update.company}</h2>
@@ -40,7 +40,7 @@ function HomePage() {
                   Cancel this Subscription!
                 </button>
               </div>
-            ))}
+            ))} */}
         </div>
 
       </div>
