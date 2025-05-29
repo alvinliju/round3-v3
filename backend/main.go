@@ -77,7 +77,6 @@ var jwt_key []byte
 var mongoClient *mongo.Client
 var db *mongo.Database
 
-// Remove these from package level
 var (
 	writerCollection        *mongo.Collection
 	updateCollection        *mongo.Collection
@@ -473,7 +472,7 @@ func writerLoginRequest(context *gin.Context) {
 		return
 	}
 	//send the uuid to the writer's email
-	url := "http://localhost:5173/login/verify?token=" + token
+	url := "https://bachmanfunded.xyz/login/verify?token=" + token
 
 	isEmailSent := sendEmail(req.WriterEmail, "BachmanFunded verification link", url)
 
