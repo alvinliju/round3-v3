@@ -19,6 +19,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
+
 	"github.com/resend/resend-go/v2"
 
 	//remove this thing on prod
@@ -93,7 +94,7 @@ func initMongo() {
 		log.Fatal(err)
 	}
 	mongoClient = client
-	db = client.Database("round3")
+	db = client.Database("BachmanFunded")
 
 	writerCollection = db.Collection("writers")
 	updateCollection = db.Collection("updates")
@@ -130,7 +131,7 @@ func main() {
 
 	//CORS
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "https://www.round3.xyz"},
+		AllowOrigins:     []string{"http://localhost:5173", "https://www.round3.xyz", "https://www.bachmanfunded.xyz"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -199,6 +200,18 @@ func inviteWriter(context *gin.Context) {
 	randomVerificationID := uuid.New().String()
 	currTime := time.Now()
 
+	url := "http:///accept-request?id=" + randomVerificationID
+
+	//send email
+	//emailSent := sendEmail(email, url)
+
+	emailSent := sendEmail(email, "Invite Request From BachmanFunded", url)
+
+	if !emailSent {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not send email"})
+		return
+	}
+
 	_, err = inviteCollection.InsertOne(context, bson.M{
 		"email":           email,
 		"verification_id": randomVerificationID,
@@ -210,29 +223,19 @@ func inviteWriter(context *gin.Context) {
 		return
 	}
 
-	url := "http://localhost:5173/accept-request?id=" + randomVerificationID
-
-	//send email
-	emailSent := sendEmail(email, url)
-
-	if !emailSent {
-		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not send email"})
-		return
-	}
-
 	context.JSON(http.StatusAccepted, gin.H{"message": "Email send, wait for the writer to accept the request"})
 
 }
 
 // helper function for inviteWriter
-func sendEmail(email string, url string) bool {
+func sendEmail(email string, subject string, content string) bool {
 	client := resend.NewClient(resend_apiKey)
 
 	params := &resend.SendEmailRequest{
-		From:    "Round3 <onboarding@resend.dev>",
+		From:    "bachman@bachmanfunded.xyz",
 		To:      []string{email},
-		Html:    url,
-		Subject: "Round3 Invite Request",
+		Html:    content,
+		Subject: subject,
 		Cc:      []string{"cc@example.com"},
 		Bcc:     []string{"bcc@example.com"},
 		ReplyTo: "replyto@example.com",
@@ -312,7 +315,7 @@ func acceptInvite(context *gin.Context) {
 	}
 
 	inviteCollection.DeleteOne(context, bson.M{"_id": invite.ID})
-	sendEmail(req.Email, "Welcome to round3")
+	sendEmail(req.Email, "Welcome to BachmanFunded", "you've succesfully signedup for BachmanFunded")
 	context.JSON(http.StatusCreated, gin.H{"message": "Writer created succesfully"})
 }
 
@@ -468,7 +471,7 @@ func writerLoginRequest(context *gin.Context) {
 	//send the uuid to the writer's email
 	url := "http://localhost:5173/login/verify?token=" + token
 
-	isEmailSent := sendEmail(req.WriterEmail, url)
+	isEmailSent := sendEmail(req.WriterEmail, "BachmanFunded verification link", url)
 
 	if !isEmailSent {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not send email"})

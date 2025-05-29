@@ -37,17 +37,6 @@ function FrontPage() {
     )
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col min-h-screen bg-[#f6f6ef]">
-        <Navbar />
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="text-sm text-gray-600">Loading writers...</div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div>
         <Navbar></Navbar>
@@ -78,7 +67,7 @@ function FrontPage() {
       {/* Writers section */}
       <div className="mt-8">
             <h2 className="text-xl font-bold mb-4">Check out some of our writers:</h2>
-
+            {isLoading && <p>loading writers</p>}
             {writers.length > 0 ? (
               <div className="space-y-3">
                 {writers.map((writer) => (
