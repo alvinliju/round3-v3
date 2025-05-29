@@ -8,7 +8,7 @@ function Navbar() {
   return (
     <header className="bg-[#ff0000] py-2 px-2 mb-6 text-white">
           <div className="flex items-center justify-between">
-            <div className="font-bold text-lg">round3</div>
+            <a href='/' className="font-bold text-lg no-underline">BachmanFunded</a>
             <nav className="flex space-x-4 text-white">
               
             <a href="/writers" className="text-sm hover:underline text-white">

@@ -94,7 +94,7 @@ func initMongo() {
 		log.Fatal(err)
 	}
 	mongoClient = client
-	db = client.Database("BachmanFunded")
+	db = client.Database("round3")
 
 	writerCollection = db.Collection("writers")
 	updateCollection = db.Collection("updates")
@@ -375,6 +375,8 @@ func postUpdate(context *gin.Context) {
 
 func discoverWriters(context *gin.Context) {
 
+	writersList := []Writer{}
+
 	cursor, err := writerCollection.Find(context, bson.M{})
 	if err != nil {
 		log.Printf("Failed to fetch writers: %v", err)
@@ -384,7 +386,6 @@ func discoverWriters(context *gin.Context) {
 
 	defer cursor.Close(context)
 
-	var writersList []Writer
 	if err = cursor.All(context, &writersList); err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to decode writers"})
 		return
@@ -446,12 +447,15 @@ func writerLoginRequest(context *gin.Context) {
 		return
 	}
 
+	fmt.Printf(req.WriterEmail)
+
 	//here is how the flow wroks
 	//writer submits the email
 	//check on our db if he exists
 	var writer Writer
 	err := writerCollection.FindOne(context, bson.M{"email": req.WriterEmail}).Decode(&writer)
 	if err != nil {
+		fmt.Printf("%s", err)
 		context.JSON(http.StatusNotFound, gin.H{"message": "Writer not found"})
 		return
 	}
