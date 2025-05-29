@@ -68,7 +68,7 @@ func main() {
 
 	fmt.Println("[DEBUG] Starting cron job...")
 	c := cron.New()
-	c.AddFunc("@every 10s", func() {
+	c.AddFunc("@every 15m", func() {
 		fmt.Println("[DEBUG] Cron job triggered: sendPendingMail()")
 		sendPendingMail()
 	})
