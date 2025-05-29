@@ -65,7 +65,7 @@ function WritersList() {
 
         const handleSubmit = async (e:FormEvent<HTMLFormElement>) => {
             e.preventDefault()
-            const url = "http://localhost:8080/subscribe"
+            const url = `${API_URL}/subscribe`
             console.log(selectedWriter, email)
     
             const res = await fetch(url, {
