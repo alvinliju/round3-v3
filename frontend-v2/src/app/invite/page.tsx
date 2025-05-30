@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@radix-ui/themes';
 import type { FormEvent } from 'react';
-const API_URL = "http://localhost:8080"
+const API_URL = process.env.API_URL
 
 function Page() {
     const [email, setEmail] = useState("")
@@ -13,23 +13,25 @@ function Page() {
             alert("Please enter an email")
             return
         }
+        setSending(true);
 
-        const res = await fetch(`${API_URL}/invite-writer`, 
-            {
-                method : 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                  },
-                body: JSON.stringify({"Email":email})
-            }
-        )
+        try {
+            const res = await fetch(`${API_URL}/invite-writer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({"Email": email})
+            });
 
-        const data = await res.json()
-
-        alert(data.message); // Show the alert
-        setSending(false)
-        setEmail(""); 
-      }
+            const data = await res.json();
+            alert(data.message || "Invitation sent successfully!");
+            setEmail("");
+        } catch (error) {
+            alert("Failed to send invitation. Please try again.");
+            console.error(error);
+        } finally {
+            setSending(false);
+        }
+    }
 
   return (
     <div className='flex-1 max-w-5xl mx-auto px-2 py-12 flex justify-center items-center'>
@@ -68,6 +70,7 @@ function Page() {
     </div>
   )
 }
+
 
 
 export default Page

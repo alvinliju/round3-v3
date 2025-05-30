@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@radix-ui/themes';
 import type { FormEvent } from 'react';
-const API_URL = "http://localhost:8080"
+const API_URL = process.env.API_URL
 
 function Page() {
     const [email, setEmail] = useState("")
@@ -14,7 +14,8 @@ function Page() {
             return
         }
 
-        const res = await fetch(`${API_URL}/login/request`, 
+        try{
+          const res = await fetch(`${API_URL}/login/request`, 
             {
                 method : 'POST',
                 headers: {
@@ -24,11 +25,18 @@ function Page() {
             }
         )
 
-        const data = await res.json()
+          const data = await res.json()
+          alert(data.message || "Email sent");
+          setEmail("");
 
-        alert(data.message); // Show the alert
-        setSending(false)
-        setEmail(""); 
+        }catch(err){
+          alert("Failed to send email. Please try again.");
+          console.error(err);
+        }finally{
+          setSending(false)
+          setEmail(""); 
+        }
+        
       }
 
   return (
