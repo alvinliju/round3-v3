@@ -5,9 +5,9 @@ function Hero() {
   return (
     <div>
         <div className="space-y-8">
-          <div>
+          <div className=''>
             <div className='flex items-center justify-center py-4'>
-            <Badge color='blue' className='text-center'>currently in beta</Badge>
+            <Badge color='blue'>currently in beta</Badge>
             </div>
             
             <h1 className="text-4xl font-medium mb-4 leading-tight">

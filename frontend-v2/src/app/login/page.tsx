@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@radix-ui/themes';
 import type { FormEvent } from 'react';
-const API_URL = process.env.API_URL
+const API_URL = process.env.API_URL;
 
 function Page() {
     const [email, setEmail] = useState("")

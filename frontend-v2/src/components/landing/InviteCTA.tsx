@@ -6,7 +6,7 @@ function InviteCTA() {
         <div className="pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-700 mb-4">
               Know someone building cool shit?{' '}
-              <a href="/invite" className="text-red-600 hover:underline">
+              <a href="/invite" className="text-black underline hover:no-underline">
                 Send them here
               </a>
             </p>

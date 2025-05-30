@@ -2,7 +2,7 @@
 import { useState, type FormEvent } from "react"
 import useSWR from "swr";
 
-const API_URL = process.env.API_URL;
+const API_URL = "http://localhost:8080";
 const PAGE_SIZE = 7;
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
