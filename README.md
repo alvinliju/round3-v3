@@ -1,12 +1,11 @@
-# 🚀 Round3
+# bachmanfunded.xyz (formerly round3)
 
-**A platform for founders who are too busy to write.**
+**Note:**  
+We have rebranded from **round3** to **bachmanfunded.xyz** due to loss of access to our previous domain. All future development and updates will continue under the new name and domain.
 
----
+## Why the Change?
 
-## What is Round3?
-
-Round3 is a new kind of platform where **founders and creators get paid for sharing honest, behind-the-scenes updates about what they're already doing**—and readers get a front-row seat to the journey.
+We unfortunately lost access to the previous domain (round3), so we have pivoted and rebranded to **bachmanfunded.xyz**. All links, documentation, and branding have been updated accordingly.
 
 ### For Creators
 - **Get paid for sharing updates** about your real work.
